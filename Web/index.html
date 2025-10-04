@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Steganography - Hide Messages in Images</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="logo-title">Secure Steganography</h1>
+                        <p class="logo-subtitle">Hide messages in images with Huffman compression</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Tabs -->
+            <div class="tabs">
+                <div class="tabs-list">
+                    <button class="tab-trigger active" data-tab="encode">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        <span>Encode</span>
+                    </button>
+                    <button class="tab-trigger" data-tab="decode">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+                        </svg>
+                        <span>Decode</span>
+                    </button>
+                    <button class="tab-trigger" data-tab="converter">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="5" height="11" x="2" y="2" rx="1"/>
+                            <rect width="5" height="7" x="9" y="9" rx="1"/>
+                            <rect width="5" height="11" x="16" y="2" rx="1"/>
+                        </svg>
+                        <span>Text ↔ Binary</span>
+                    </button>
+                    <button class="tab-trigger" data-tab="capacity">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                            <path d="M3 5V19A9 3 0 0 0 21 19V5"/>
+                            <path d="M3 12A9 3 0 0 0 21 12"/>
+                        </svg>
+                        <span>Capacity</span>
+                    </button>
+                </div>
+
+                <!-- Encode Tab Content -->
+                <div class="tab-content active" id="encode-content">
+                    <div class="tab-header">
+                        <h2>Encode Message</h2>
+                        <p class="tab-description">Hide your secret message inside an image using LSB steganography with Huffman compression.</p>
+                    </div>
+                    <div class="grid">
+                        <!-- Input Section -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Encode Message</h3>
+                                <p class="card-description">Hide your secret message inside an image</p>
+                            </div>
+                            <div class="card-content">
+                                <div class="form-group">
+                                    <label class="label-text">Select Image</label>
+                                    <label for="encode-image" class="file-input-label">
+                                        <input type="file" id="encode-image" accept="image/*" class="file-input-hidden">
+                                        <div class="file-input-box">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                                <polyline points="17 8 12 3 7 8"/>
+                                                <line x1="12" x2="12" y1="3" y2="15"/>
+                                            </svg>
+                                            <span class="file-input-text">Click to select an image</span>
+                                            <span class="file-input-hint">or drag and drop</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div class="image-preview" id="encode-preview">
+                                    <p class="preview-placeholder">Image preview will appear here</p>
+                                </div>
+                                <div class="form-group">
+                                    <label for="secret-message">Secret Message</label>
+                                    <textarea id="secret-message" rows="5" placeholder="Enter your secret message here..." class="textarea"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="header-bits">Header Size</label>
+                                    <select id="header-bits" class="select">
+                                        <option value="64">64 bits (standard)</option>
+                                        <option value="128">128 bits (large messages)</option>
+                                    </select>
+                                </div>
+                                <button id="encode-btn" class="btn btn-primary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                    </svg>
+                                    Encode Message
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Output Section -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Encoded Image</h3>
+                                <p class="card-description">Download your image with the hidden message</p>
+                            </div>
+                            <div class="card-content">
+                                <div class="image-preview" id="encoded-preview">
+                                    <p class="preview-placeholder">Encoded image will appear here</p>
+                                </div>
+                                <button id="download-btn" class="btn btn-primary" disabled>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="7 10 12 15 17 10"/>
+                                        <line x1="12" x2="12" y1="15" y2="3"/>
+                                    </svg>
+                                    Download Encoded Image
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="encode-stats" class="stats-card" style="display: none;">
+                        <h3>Encoding Statistics</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <p class="stat-label">Image Capacity</p>
+                                <p class="stat-value" id="encode-capacity">0 bits</p>
+                            </div>
+                            <div class="stat-item">
+                                <p class="stat-label">Message Size</p>
+                                <p class="stat-value" id="encode-message-size">0 bits</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="encode-alert" class="alert" style="display: none;"></div>
+                </div>
+
+                <!-- Decode Tab Content -->
+                <div class="tab-content" id="decode-content">
+                    <div class="tab-header">
+                        <h2>Decode Message</h2>
+                        <p class="tab-description">Extract hidden messages from encoded images. The system automatically decompresses the Huffman-encoded data.</p>
+                    </div>
+                    <div class="grid">
+                        <!-- Input Section -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Decode Message</h3>
+                                <p class="card-description">Extract hidden message from an image</p>
+                            </div>
+                            <div class="card-content">
+                                <div class="form-group">
+                                    <label class="label-text">Select Encoded Image</label>
+                                    <label for="decode-image" class="file-input-label">
+                                        <input type="file" id="decode-image" accept="image/*" class="file-input-hidden">
+                                        <div class="file-input-box">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                                <polyline points="17 8 12 3 7 8"/>
+                                                <line x1="12" x2="12" y1="3" y2="15"/>
+                                            </svg>
+                                            <span class="file-input-text">Click to select an image</span>
+                                            <span class="file-input-hint">or drag and drop</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div class="image-preview" id="decode-preview">
+                                    <p class="preview-placeholder">Image preview will appear here</p>
+                                </div>
+                                <div class="form-group">
+                                    <label for="decode-header-bits">Header Size</label>
+                                    <select id="decode-header-bits" class="select">
+                                        <option value="64">64 bits (standard)</option>
+                                        <option value="128">128 bits (large messages)</option>
+                                    </select>
+                                </div>
+                                <button id="decode-btn" class="btn btn-primary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                                        <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+                                    </svg>
+                                    Decode Message
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Output Section -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Decoded Message</h3>
+                                <p class="card-description">The hidden message extracted from the image</p>
+                            </div>
+                            <div class="card-content">
+                                <div class="decoded-output" id="decoded-output">
+                                    <p class="preview-placeholder">Decoded message will appear here</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="decode-alert" class="alert" style="display: none;"></div>
+                </div>
+
+                <!-- Converter Tab Content -->
+                <div class="tab-content" id="converter-content">
+                    <div class="tab-header">
+                        <h2>Text ↔ Binary Converter</h2>
+                        <p class="tab-description">Convert between text and binary using Huffman compression.</p>
+                    </div>
+                    <div class="grid">
+                        <!-- Text to Binary -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Text to Binary</h3>
+                                <p class="card-description">Convert text to compressed binary format</p>
+                            </div>
+                            <div class="card-content">
+                                <div class="form-group">
+                                    <label for="text-input">Input Text</label>
+                                    <textarea id="text-input" rows="5" placeholder="Enter your text here..." class="textarea"></textarea>
+                                </div>
+                                <button id="text-to-binary-btn" class="btn btn-primary">Convert to Binary</button>
+                                <div class="form-group" id="binary-output-group" style="display: none;">
+                                    <label for="binary-output">Binary Output</label>
+                                    <textarea id="binary-output" rows="5" readonly class="textarea textarea-readonly"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Binary to Text -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Binary to Text</h3>
+                                <p class="card-description">Convert binary format back to text</p>
+                            </div>
+                            <div class="card-content">
+                                <div class="form-group">
+                                    <label for="binary-input">Input Binary</label>
+                                    <textarea id="binary-input" rows="5" placeholder="Enter binary data (0s and 1s)..." class="textarea"></textarea>
+                                </div>
+                                <button id="binary-to-text-btn" class="btn btn-primary">Convert to Text</button>
+                                <div class="form-group" id="text-output-group" style="display: none;">
+                                    <label for="text-output">Text Output</label>
+                                    <textarea id="text-output" rows="5" readonly class="textarea textarea-readonly"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="converter-stats" class="stats-card" style="display: none;">
+                        <h3>Compression Statistics</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <p class="stat-label">Original Size</p>
+                                <p class="stat-value" id="conv-original">0 bits</p>
+                            </div>
+                            <div class="stat-item">
+                                <p class="stat-label">Compressed Size</p>
+                                <p class="stat-value" id="conv-compressed">0 bits</p>
+                            </div>
+                            <div class="stat-item">
+                                <p class="stat-label">Compression Ratio</p>
+                                <p class="stat-value stat-success" id="conv-ratio">0%</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="converter-alert" class="alert" style="display: none;"></div>
+                </div>
+
+                <!-- Capacity Tab Content -->
+                <div class="tab-content" id="capacity-content">
+                    <div class="tab-header">
+                        <h2>Capacity Checker</h2>
+                        <p class="tab-description">Check how much data an image can hide and verify if your text will fit.</p>
+                    </div>
+                    <div class="grid">
+                        <!-- Image Capacity Section -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Image Capacity</h3>
+                                <p class="card-description">Analyze your image's storage capacity</p>
+                            </div>
+                            <div class="card-content">
+                                <div class="form-group">
+                                    <label class="label-text">Select Image</label>
+                                    <label for="capacity-image" class="file-input-label">
+                                        <input type="file" id="capacity-image" accept="image/*" class="file-input-hidden">
+                                        <div class="file-input-box">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                                <polyline points="17 8 12 3 7 8"/>
+                                                <line x1="12" x2="12" y1="3" y2="15"/>
+                                            </svg>
+                                            <span class="file-input-text">Click to select an image</span>
+                                            <span class="file-input-hint">or drag and drop</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div class="image-preview" id="capacity-preview">
+                                    <p class="preview-placeholder">Image preview will appear here</p>
+                                </div>
+                                <button id="capacity-btn" class="btn btn-primary">Check Capacity</button>
+                            </div>
+                        </div>
+
+                        <!-- Text Size Calculator Section -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Text Size Calculator</h3>
+                                <p class="card-description">Check how much space your text will need</p>
+                            </div>
+                            <div class="card-content">
+                                <div class="form-group">
+                                    <label for="capacity-text-input">Your Text</label>
+                                    <textarea id="capacity-text-input" rows="8" placeholder="Paste or type your text here to check its size..." class="textarea"></textarea>
+                                </div>
+                                <button id="calculate-text-size-btn" class="btn btn-primary">Calculate Text Size</button>
+                                <div id="text-size-results" style="display: none; margin-top: 1rem;">
+                                    <div class="text-size-stats">
+                                        <div class="stat-row">
+                                            <span class="stat-label">Character Count:</span>
+                                            <span class="stat-value" id="text-char-count">0</span>
+                                        </div>
+                                        <div class="stat-row">
+                                            <span class="stat-label">Original Size:</span>
+                                            <span class="stat-value" id="text-original-size">0 bits</span>
+                                        </div>
+                                        <div class="stat-row">
+                                            <span class="stat-label">Huffman Compressed:</span>
+                                            <span class="stat-value stat-success" id="text-compressed-size">0 bits</span>
+                                        </div>
+                                        <div class="stat-row">
+                                            <span class="stat-label">Required Capacity:</span>
+                                            <span class="stat-value stat-info" id="text-total-size">0 bits</span>
+                                        </div>
+                                    </div>
+                                    <div id="capacity-comparison" style="display: none; margin-top: 1rem;">
+                                        <div class="capacity-result-box">
+                                            <div class="capacity-result-content">
+                                                <div class="capacity-result-icon" id="capacity-result-icon">✓</div>
+                                                <div class="capacity-result-text" id="capacity-result-text">
+                                                    Select an image to compare capacity
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="capacity-results" style="display: none;">
+                        <div class="stats-card">
+                            <h3>Image Information</h3>
+                            <div class="stats-grid stats-grid-2">
+                                <div class="stat-item">
+                                    <p class="stat-label">Dimensions</p>
+                                    <p class="stat-value" id="cap-dimensions">0 × 0</p>
+                                </div>
+                                <div class="stat-item">
+                                    <p class="stat-label">Total Pixels</p>
+                                    <p class="stat-value" id="cap-pixels">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stats-card">
+                            <h3>Storage Capacity</h3>
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <p class="stat-label">Maximum Bits</p>
+                                    <p class="stat-value stat-success" id="cap-bits">0</p>
+                                </div>
+                                <div class="stat-item">
+                                    <p class="stat-label">Maximum Bytes</p>
+                                    <p class="stat-value stat-info" id="cap-bytes">0</p>
+                                </div>
+                                <div class="stat-item">
+                                    <p class="stat-label">Maximum KB</p>
+                                    <p class="stat-value stat-warning" id="cap-kb">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stats-card">
+                            <h3>Estimated Text Capacity</h3>
+                            <div class="capacity-info">
+                                <div class="capacity-stat">
+                                    <p class="stat-label">Approximate Characters</p>
+                                    <p class="stat-value stat-large" id="cap-chars">0</p>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="capacity-alert" class="alert" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p class="footer-text">Secure image steganography powered by Huffman coding technology for optimal data compression and hiding.</p>
+                <div class="footer-tags">
+                    <span>LSB Steganography</span>
+                    <span>•</span>
+                    <span>Huffman Coding</span>
+                    <span>•</span>
+                    <span>100% Client-Side</span>
+                    <span>•</span>
+                    <span>Zero Server Upload</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
