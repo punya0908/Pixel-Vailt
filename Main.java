@@ -32,7 +32,7 @@ public class Main {
                     EncodeBinary.encode(imgPath, binaryData, outputPath, headerBits);
                     System.out.println("Image saved to: " + outputPath);
                     break;
-                case 2: // 5 page doc bhi chal rhe
+                case 2: // 5 page doc also working
                     System.out.print("Enter image path: ");
                     String decodeImgPath = sc.nextLine();
 

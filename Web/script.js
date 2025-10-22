@@ -271,7 +271,8 @@ function encodeToImage(imageData, binaryData, headerBits) {
             data[i + 2] = (data[i + 2] & 0xFE) | parseInt(full[di]);
             di++;
         }
-        // Skip Alpha
+        // Ensure Alpha is fully opaque to prevent PNG issues
+        data[i + 3] = 255;
     }
     
     console.log('[Encode] Bits written:', di);
@@ -286,46 +287,69 @@ function decodeFromImage(imageData, headerBits) {
     console.log('[Decode] Image dimensions:', imageData.width, 'x', imageData.height);
     console.log('[Decode] Max possible bits:', maxPossible);
     console.log('[Decode] Header bits:', headerBits);
-    console.log('[Decode] First 20 LSBs:', Array.from({length: 20}, (_, i) => data[Math.floor(i * 4 / 3) * 4 + (i % 3)] & 1).join(''));
+    
+    // Debug: show first 48 bits (the header) with their pixel indices
+    const first48 = [];
+    for (let i = 0, bitCount = 0; bitCount < 48 && i < data.length; i += 4) {
+        first48.push((data[i] & 1).toString());
+        bitCount++;
+        if (bitCount >= 48) break;
+        first48.push((data[i + 1] & 1).toString());
+        bitCount++;
+        if (bitCount >= 48) break;
+        first48.push((data[i + 2] & 1).toString());
+        bitCount++;
+    }
+    console.log('[Decode] First 48 LSBs (header):', first48.join(''));
     
     if (maxPossible < headerBits) {
         throw new Error('There is no hidden message');
     }
     
     // Read all bits sequentially from R,G,B channels
-    let allBits = '';
+    // Use array for better performance with large data
+    const bitsArray = [];
     let bitsRead = 0;
+    let messageLength = 0;
+    let totalNeeded = 0;
     
-    outerLoop: for (let i = 0; i < data.length && bitsRead < headerBits + 1000000; i += 4) {
+    outerLoop: for (let i = 0; i < data.length && bitsRead < headerBits + 10000000; i += 4) {
         // Read from R, G, B channels in order
-        allBits += (data[i] & 1).toString();
+        bitsArray.push((data[i] & 1).toString());
         bitsRead++;
         
-        allBits += (data[i + 1] & 1).toString();
+        bitsArray.push((data[i + 1] & 1).toString());
         bitsRead++;
         
-        allBits += (data[i + 2] & 1).toString();
+        bitsArray.push((data[i + 2] & 1).toString());
         bitsRead++;
         
         // Check if we have header to determine total needed bits
-        if (bitsRead >= headerBits) {
-            const headerBinary = allBits.substring(0, headerBits);
-            const messageLength = parseInt(headerBinary, 2);
+        if (bitsRead >= headerBits && messageLength === 0) {
+            const headerBinary = bitsArray.slice(0, headerBits).join('');
+            messageLength = parseInt(headerBinary, 2);
             
-            if (messageLength <= 0 || messageLength > 1000000) {
+            if (messageLength <= 0 || messageLength > 100000000) {
                 throw new Error('There is no hidden message');
             }
             
-            // Check if we have enough total bits
-            const totalNeeded = headerBits + messageLength;
-            if (bitsRead >= totalNeeded) {
-                break outerLoop;
-            }
+            totalNeeded = headerBits + messageLength;
+            console.log('[Decode] Detected message length:', messageLength, 'Total needed:', totalNeeded);
+        }
+        
+        // Stop reading once we have all data
+        if (totalNeeded > 0 && bitsRead >= totalNeeded) {
+            break outerLoop;
         }
     }
     
+    console.log('[Decode] Bits read:', bitsRead, 'Converting to string...');
+    const allBits = bitsArray.join('');
+    console.log('[Decode] Conversion complete, total length:', allBits.length);
+    
     // Extract header and validate
     if (allBits.length < headerBits) {
+        console.error('[Decode] ERROR: Not enough bits read. Got:', allBits.length, 'Need:', headerBits);
         throw new Error('There is no hidden message');
     }
     
@@ -334,16 +358,27 @@ function decodeFromImage(imageData, headerBits) {
     
     console.log('[Decode] Header binary:', headerBinary);
     console.log('[Decode] Message bit length:', messageBitLength);
+    console.log('[Decode] Total bits read:', allBits.length);
+    console.log('[Decode] Expected total (header + message):', headerBits + messageBitLength);
     
-    if (messageBitLength <= 0 || messageBitLength > allBits.length - headerBits) {
+    if (messageBitLength <= 0) {
+        console.error('[Decode] ERROR: Message length is zero or negative:', messageBitLength);
+        throw new Error('There is no hidden message');
+    }
+    
+    if (messageBitLength > allBits.length - headerBits) {
+        console.error('[Decode] ERROR: Message length exceeds available bits. Message needs:', messageBitLength, 'Available:', allBits.length - headerBits);
         throw new Error('There is no hidden message');
     }
     
     // Extract message binary (skip header)
     const messageBinary = allBits.substring(headerBits, headerBits + messageBitLength);
     
+    console.log('[Decode] Extracted message binary length:', messageBinary.length);
+    
     // Validate binary format
     if (messageBinary.length % 8 !== 0) {
+        console.error('[Decode] ERROR: Message binary not divisible by 8. Length:', messageBinary.length, 'Remainder:', messageBinary.length % 8);
         throw new Error('There is no hidden message');
     }
     
@@ -361,7 +396,7 @@ function imageToImageData(img) {
     const canvas = document.createElement('canvas');
     canvas.width = img.width;
     canvas.height = img.height;
-    const ctx = canvas.getContext('2d', { 
+    const ctx = canvas.getContext('2d', {
         willReadFrequently: true,
         alpha: false,
         colorSpace: 'srgb'
@@ -376,8 +411,10 @@ function imageDataToDataURL(imageData) {
     canvas.width = imageData.width;
     canvas.height = imageData.height;
     const ctx = canvas.getContext('2d', {
-        alpha: false,
-        colorSpace: 'srgb'
+        alpha: true,
+        colorSpace: 'srgb',
+        willReadFrequently: false,
+        desynchronized: false
     });
     ctx.imageSmoothingEnabled = false;
     ctx.putImageData(imageData, 0, 0);
@@ -475,8 +512,15 @@ class SteganographyApp {
             console.log('[Main] Binary data length:', binaryData.length);
             console.log('[Main] Capacity:', capacity);
             
+            // Validate that headerBits is large enough to encode the message length
+            const maxHeaderRepresentable = Math.pow(2, headerBits);
+            if (binaryData.length >= maxHeaderRepresentable) {
+                this.showAlert(`Message is too large! Maximum supported message size is ${Math.floor(maxHeaderRepresentable / 8).toLocaleString()} bytes.`, 'error', 'encode-alert');
+                return;
+            }
+
             const totalBits = headerBits + binaryData.length;
-            
+
             if (totalBits > capacity) {
                 this.showAlert(`Message too large! Image can hold ${capacity} bits, but message needs ${totalBits} bits.`, 'error', 'encode-alert');
                 return;
@@ -579,15 +623,6 @@ class SteganographyApp {
             document.getElementById('binary-output-group').style.display = 'flex';
             document.getElementById('binary-input').value = binary;
 
-            const originalSize = textInput.value.length * 8;
-            const compressedSize = binary.length;
-            const ratio = originalSize > 0 ? ((originalSize - compressedSize) / originalSize) * 100 : 0;
-            
-            document.getElementById('conv-original').textContent = `${originalSize} bits`;
-            document.getElementById('conv-compressed').textContent = `${compressedSize} bits`;
-            document.getElementById('conv-ratio').textContent = `${ratio.toFixed(2)}%`;
-            document.getElementById('converter-stats').style.display = 'block';
-
             this.showAlert('Text converted to binary successfully!', 'success', 'converter-alert');
         } catch (err) {
             console.error(err);
@@ -636,7 +671,10 @@ class SteganographyApp {
             const totalBits = calculateCapacity(img.width, img.height);
             const totalBytes = Math.floor(totalBits / 8);
             const totalKB = (totalBytes / 1024).toFixed(2);
-            const estimatedChars = Math.floor((totalBits * 0.5) / 8);
+            // Realistic character estimate: subtract 48-bit header, assume average 8 bits per character
+            // (Emojis and special chars will use more space)
+            const usableBits = totalBits - 48; // Subtract header
+            const estimatedChars = Math.floor(usableBits / 8); // 8 bits per character
 
             console.log('[Capacity] Image:', img.width, 'x', img.height);
             console.log('[Capacity] Total bits:', totalBits);
@@ -657,7 +695,7 @@ class SteganographyApp {
             // Update comparison if text is already calculated
             this.updateCapacityComparison();
 
-            this.showAlert(`This image can hide approximately ${estimatedChars.toLocaleString()} characters of text with Huffman compression.`, 'info', 'capacity-alert');
+            this.showAlert(`This image can hide approximately ${estimatedChars.toLocaleString()} characters (emojis and special characters may use more space).`, 'info', 'capacity-alert');
         } catch (err) {
             console.error('[Capacity] Error:', err);
             this.showAlert('Failed to analyze image capacity: ' + err.message, 'error', 'capacity-alert');
@@ -675,23 +713,17 @@ class SteganographyApp {
         try {
             const text = textInput.value;
             
-            // Calculate actual size (plain binary - what will really be encoded)
+            // Calculate actual size using the REAL encoding method (binary, no compression)
             const actualBinaryData = textToBinary(text);
-            const actualSize = actualBinaryData.length;
-            const totalSize = 64 + actualSize; // 64-bit header + data
+            const messageSize = actualBinaryData.length;
+            const totalSize = 48 + messageSize; // 48-bit header + data
             
             const charCount = text.length;
-            const originalSize = text.length * 8;
-            
-            // THE BLUFF: Show slightly smaller "compressed" size (5-10% reduction for show)
-            // But use ACTUAL size for capacity comparison
-            const fakeCompressedSize = Math.floor(actualSize * 0.92); // Fake 8% compression
 
-            // Show fake Huffman stats (looks professional)
+            // Show ACTUAL sizes that will be used in encoding
             document.getElementById('text-char-count').textContent = charCount.toLocaleString();
-            document.getElementById('text-original-size').textContent = `${originalSize.toLocaleString()} bits`;
-            document.getElementById('text-compressed-size').textContent = `${fakeCompressedSize.toLocaleString()} bits`;
-            document.getElementById('text-total-size').textContent = `${totalSize.toLocaleString()} bits`;
+            document.getElementById('text-original-size').textContent = `${messageSize.toLocaleString()} bits (${(messageSize / 8).toLocaleString()} bytes)`;
+            document.getElementById('text-total-size').textContent = `${totalSize.toLocaleString()} bits (${(totalSize / 8).toFixed(1)} bytes)`;
 
             document.getElementById('text-size-results').style.display = 'block';
 

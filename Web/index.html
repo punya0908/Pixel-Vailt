@@ -103,8 +103,7 @@
                                 <div class="form-group">
                                     <label for="header-bits">Header Size</label>
                                     <select id="header-bits" class="select">
-                                        <option value="64">64 bits (standard)</option>
-                                        <option value="128">128 bits (large messages)</option>
+                                        <option value="48">48 bits (16 pixels)</option>
                                     </select>
                                 </div>
                                 <button id="encode-btn" class="btn btn-primary">
@@ -189,8 +188,7 @@
                                 <div class="form-group">
                                     <label for="decode-header-bits">Header Size</label>
                                     <select id="decode-header-bits" class="select">
-                                        <option value="64">64 bits (standard)</option>
-                                        <option value="128">128 bits (large messages)</option>
+                                        <option value="48">48 bits (16 pixels)</option>
                                     </select>
                                 </div>
                                 <button id="decode-btn" class="btn btn-primary">
@@ -264,23 +262,7 @@
                             </div>
                         </div>
                     </div>
-                    <div id="converter-stats" class="stats-card" style="display: none;">
-                        <h3>Compression Statistics</h3>
-                        <div class="stats-grid">
-                            <div class="stat-item">
-                                <p class="stat-label">Original Size</p>
-                                <p class="stat-value" id="conv-original">0 bits</p>
-                            </div>
-                            <div class="stat-item">
-                                <p class="stat-label">Compressed Size</p>
-                                <p class="stat-value" id="conv-compressed">0 bits</p>
-                            </div>
-                            <div class="stat-item">
-                                <p class="stat-label">Compression Ratio</p>
-                                <p class="stat-value stat-success" id="conv-ratio">0%</p>
-                            </div>
-                        </div>
-                    </div>
+
                     <div id="converter-alert" class="alert" style="display: none;"></div>
                 </div>
 
@@ -339,15 +321,11 @@
                                             <span class="stat-value" id="text-char-count">0</span>
                                         </div>
                                         <div class="stat-row">
-                                            <span class="stat-label">Original Size:</span>
+                                            <span class="stat-label">Message Size:</span>
                                             <span class="stat-value" id="text-original-size">0 bits</span>
                                         </div>
                                         <div class="stat-row">
-                                            <span class="stat-label">Huffman Compressed:</span>
-                                            <span class="stat-value stat-success" id="text-compressed-size">0 bits</span>
-                                        </div>
-                                        <div class="stat-row">
-                                            <span class="stat-label">Required Capacity:</span>
+                                            <span class="stat-label">Total Required (with header):</span>
                                             <span class="stat-value stat-info" id="text-total-size">0 bits</span>
                                         </div>
                                     </div>
